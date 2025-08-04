@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plano de Estudos Interativo - Concurso TJPE Programador</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutrals (Amber/Gray) with Soft Blue accents -->
+    <!-- Application Structure Plan: A tab-based SPA with four main sections: 'Visão Geral' (dashboard with key stats and a chart), 'Cronograma' (interactive weekly schedule), 'Conteúdo Programático' (explorable accordion of topics), and 'Estratégias' (collapsible tips). This structure deconstructs the long report into manageable, task-oriented views, prioritizing the interactive schedule and syllabus exploration to actively engage the user in their study planning, which is more effective than a passive, linear document. -->
+    <!-- Visualization & Content Choices: 1. Exam Structure -> Goal: Compare -> Viz: Doughnut Chart (Chart.js) -> Interaction: Hover -> Justification: Visually emphasizes the high weight of specific knowledge. 2. Study Schedule -> Goal: Organize -> Viz: Interactive HTML Grid -> Interaction: Click week/topic -> Justification: Transforms the static table into a dynamic, user-friendly planner. 3. Syllabus -> Goal: Organize -> Viz: HTML Accordion -> Interaction: Click to expand/collapse -> Justification: Manages information hierarchy and prevents overload. 4. Strategies -> Goal: Inform -> Viz: HTML Accordion -> Interaction: Click to expand -> Justification: Organizes textual content for easy reading. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 320px;
+            height: 320px;
+            margin: auto;
+        }
+        .nav-button.active {
+            background-color: #3b82f6;
+            color: white;
+        }
+        .content-section {
+            display: none;
+        }
+        .content-section.active {
+            display: block;
+        }
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        .schedule-topic {
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .schedule-topic:hover {
+            background-color: #eef2ff;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <div id="app" class="container mx-auto p-4 sm:p-6 lg:p-8 max-w-7xl">
+
+        <header class="text-center mb-8">
+            <h1 class="text-3xl sm:text-4xl font-bold text-blue-600">Plano de Estudos Interativo</h1>
+            <p class="text-lg text-gray-600 mt-2">Guia para o concurso de Programador do TJPE 2025</p>
+        </header>
+
+        <nav class="flex flex-wrap justify-center gap-2 mb-8">
+            <button data-target="overview" class="nav-button active text-sm sm:text-base font-medium py-2 px-4 rounded-lg shadow-sm bg-white hover:bg-blue-100 transition-colors">
+                Visão Geral
+            </button>
+            <button data-target="schedule" class="nav-button text-sm sm:text-base font-medium py-2 px-4 rounded-lg shadow-sm bg-white hover:bg-blue-100 transition-colors">
+                Cronograma
+            </button>
+            <button data-target="syllabus" class="nav-button text-sm sm:text-base font-medium py-2 px-4 rounded-lg shadow-sm bg-white hover:bg-blue-100 transition-colors">
+                Conteúdo Programático
+            </button>
+            <button data-target="strategies" class="nav-button text-sm sm:text-base font-medium py-2 px-4 rounded-lg shadow-sm bg-white hover:bg-blue-100 transition-colors">
+                Estratégias
+            </button>
+        </nav>
+
+        <main>
+            <section id="overview" class="content-section active">
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h2 class="text-2xl font-bold text-center mb-6 text-gray-700">Visão Geral do Concurso</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                        <div>
+                            <h3 class="text-xl font-semibold text-center mb-4">Distribuição de Pontos - Prova Objetiva</h3>
+                            <div class="chart-container">
+                                <canvas id="provaChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="space-y-6">
+                            <div>
+                                <h3 class="text-xl font-semibold mb-3 text-gray-700">Critérios de Aprovação (Objetiva)</h3>
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-left text-sm rounded-lg overflow-hidden">
+                                        <thead class="bg-gray-100 text-gray-600 uppercase">
+                                            <tr>
+                                                <th class="p-3">Conhecimentos</th>
+                                                <th class="p-3 text-center">Mín. (Ampla)</th>
+                                                <th class="p-3 text-center">Mín. (PCD/N/I)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-gray-200">
+                                            <tr class="bg-white">
+                                                <td class="p-3 font-medium">Gerais (de 7,50)</td>
+                                                <td class="p-3 text-center">5,25 pts</td>
+                                                <td class="p-3 text-center">4,20 pts</td>
+                                            </tr>
+                                            <tr class="bg-white">
+                                                <td class="p-3 font-medium">Específicos (de 45,00)</td>
+                                                <td class="p-3 text-center">31,50 pts</td>
+                                                <td class="p-3 text-center">25,20 pts</td>
+                                            </tr>
+                                            <tr class="bg-gray-50">
+                                                <td class="p-3 font-bold">TOTAL (de 52,50)</td>
+                                                <td class="p-3 text-center font-bold">36,75 pts</td>
+                                                <td class="p-3 text-center font-bold">29,40 pts</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-semibold mb-3 text-gray-700">Prova Discursiva</h3>
+                                <div class="bg-blue-50 border-l-4 border-blue-500 text-blue-800 p-4 rounded-r-lg">
+                                    <p><strong>Formato:</strong> 1 questão de conhecimentos específicos.</p>
+                                    <p><strong>Tamanho:</strong> 20 a 30 linhas.</p>
+                                    <p><strong>Pontuação:</strong> 0 a 10 pontos (mínimo de 6 para aprovação).</p>
+                                    <p><strong>Correção:</strong> Apenas para os 50 mais bem classificados na objetiva (Ampla Concorrência).</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="schedule" class="content-section">
+                 <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h2 class="text-2xl font-bold text-center mb-6 text-gray-700">Cronograma de Estudos</h2>
+                    <div id="week-selector" class="flex flex-wrap justify-center gap-2 mb-6"></div>
+                    <div id="schedule-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"></div>
+                </div>
+            </section>
+
+            <section id="syllabus" class="content-section">
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h2 class="text-2xl font-bold text-center mb-6 text-gray-700">Conteúdo Programático</h2>
+                    <p class="text-center text-gray-600 mb-8">
+                        Esta seção ajuda a visualizar a amplitude de cada matéria e a focar nos pontos mais importantes.
+                    </p>
+                    <div id="syllabus-container"></div>
+                </div>
+            </section>
+
+            <section id="strategies" class="content-section">
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h2 class="text-2xl font-bold text-center mb-6 text-gray-700">Estratégias e Dicas</h2>
+                     <p class="text-center text-gray-600 mb-8">
+                       Esta seção reúne as melhores práticas e conselhos para otimizar meu tempo, reter mais conhecimento e chegar no dia da prova com confiança e preparo.
+                    </p>
+                    <div id="strategies-container" class="space-y-4"></div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div id="materials-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+            <div class="p-6 border-b sticky top-0 bg-white">
+                <div class="flex justify-between items-center">
+                    <h3 id="modal-title" class="text-xl font-bold">Materiais de Estudo</h3>
+                    <button id="modal-close" class="text-gray-500 hover:text-gray-800">&times;</button>
+                </div>
+            </div>
+            <div id="modal-content" class="p-6"></div>
+        </div>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const appData = {
+                schedule: {
+                    1: [
+                        { day: 'Terça (05/08)', morning: 'Português (Ortografia, Acentuação, Pontuação)', evening: 'Dev. Software (Metodologias Ágeis: Scrum, Kanban)' },
+                        { day: 'Quarta (06/08)', morning: 'Raciocínio Lógico (Lógica Proporcional)', evening: 'Dev. Software (POO Java)' },
+                        { day: 'Quinta (07/08)', morning: 'Português (Vocabulário, Pronomes)', evening: 'Banco de Dados (Modelagem: Conceitual, Lógica, Física)' },
+                        { day: 'Sexta (08/08)', morning: 'Raciocínio Lógico (Argumentação Lógica)', evening: 'Segurança da Info (Fundamentos: CIA, ISO 27001)' },
+                        { day: 'Sábado (09/08)', morning: 'Legislação (Governo Digital, LAI)', evening: 'IA e Automação (Fundamentos IA, IA Generativa)' },
+                        { day: 'Domingo (10/08)', morning: 'Revisão / Catch-up', evening: 'Simulado Curto (Objetiva)' },
+                    ],
+                    2: [
+                        { day: 'Segunda (11/08)', morning: 'Português (Concordância)', evening: 'Dev. Software (Computação em Nuvem)' },
+                        { day: 'Terça (12/08)', morning: 'Raciocínio Lógico (Raciocínio Sequencial)', evening: 'Dev. Software (Microsserviços, DevOps, CI/CD)' },
+                        { day: 'Quarta (13/08)', morning: 'Português (Flexão Nominal e Verbal)', evening: 'Banco de Dados (Normalização e Integridade)' },
+                        { day: 'Quinta (14/08)', morning: 'Raciocínio Lógico (Raciocínio Quantitativo)', evening: 'Segurança da Info (Criptografia)' },
+                        { day: 'Sexta (15/08)', morning: 'Legislação (LGPD)', evening: 'IA e Automação (Machine Learning)' },
+                        { day: 'Sábado (16/08)', morning: 'Ciência de Dados (Fundamentos, Ética)', evening: 'PRÁTICA DISCURSIVA (1 Questão)' },
+                        { day: 'Domingo (17/08)', morning: 'Revisão / Catch-up', evening: 'Simulado Curto (Objetiva)' },
+                    ],
+                    3: [
+                        { day: 'Segunda (18/08)', morning: 'Português (Regência)', evening: 'Dev. Software (API RESTful, JSON, Spring)' },
+                        { day: 'Terça (19/08)', morning: 'Raciocínio Lógico (Raciocínio Analítico)', evening: 'Dev. Software (Persistência: JPA, Hibernate)' },
+                        { day: 'Quarta (20/08)', morning: 'Português (Vozes do Verbo, Tempos Verbais)', evening: 'Banco de Dados (DDL/DML, PostgreSQL, Oracle)' },
+                        { day: 'Quinta (21/08)', morning: 'Raciocínio Lógico (Diagramas Lógicos)', evening: 'Segurança da Info (Segurança de Redes)' },
+                        { day: 'Sexta (22/08)', morning: 'Legislação (Resoluções CNJ 185, 335)', evening: 'IA e Automação (Avaliação de Modelos)' },
+                        { day: 'Sábado (23/08)', morning: 'Ciência de Dados (Estatística Aplicada)', evening: 'PRÁTICA DISCURSIVA (1 Questão)' },
+                        { day: 'Domingo (24/08)', morning: 'Revisão / Catch-up', evening: 'Simulado Curto (Objetiva)' },
+                    ],
+                    4: [
+                        { day: 'Segunda (25/08)', morning: 'Português (Coordenação e Subordinação)', evening: 'Dev. Software (Mensageria: RabbitMQ, Kafka)' },
+                        { day: 'Terça (26/08)', morning: 'Raciocínio Lógico (Análise Combinatória)', evening: 'Dev. Software (Containers: Docker, Kubernetes)' },
+                        { day: 'Quarta (27/08)', morning: 'Português (Morfossintaxe)', evening: 'Banco de Dados (MySQL/MariaDB, H2, MongoDB)' },
+                        { day: 'Quinta (28/08)', morning: 'Raciocínio Lógico (Probabilidade)', evening: 'Segurança da Info (Segurança em Aplicações)' },
+                        { day: 'Sexta (29/08)', morning: 'Legislação (Resoluções CNJ 370, 396)', evening: 'IA e Automação (NLP)' },
+                        { day: 'Sábado (30/08)', morning: 'Ciência de Dados (Ferramentas BI, Dashboards)', evening: 'PRÁTICA DISCURSIVA (1 Questão)' },
+                        { day: 'Domingo (31/08)', morning: 'Revisão / Catch-up', evening: 'Simulado Curto (Objetiva)' },
+                    ],
+                    5: [
+                        { day: 'Segunda (01/09)', morning: 'Português (Semântica)', evening: 'Dev. Software (Autenticação: SSO, Keycloak, OAuth2)' },
+                        { day: 'Terça (02/09)', morning: 'Legislação (Resolução TJPE 395)', evening: 'Dev. Software (Webhook e APIs reversas)' },
+                        { day: 'Quarta (03/09)', morning: 'Português (Formação de Palavras)', evening: 'Segurança da Info (Segurança em Nuvem)' },
+                        { day: 'Quinta (04/09)', morning: 'Legislação (Lei Comp. 100/2007)', evening: 'IA e Automação (Engenharia de Prompt, RAG)' },
+                        { day: 'Sexta (05/09)', morning: 'Português (Interpretação de Textos)', evening: 'Ciência de Dados (Engenharia de Dados)' },
+                        { day: 'Sábado (06/09)', morning: 'Legislação (Lei Est. 6.123/1968)', evening: 'PRÁTICA DISCURSIVA (1 Questão)' },
+                        { day: 'Domingo (07/09)', morning: 'Revisão / Catch-up', evening: 'Simulado Curto (Objetiva)' },
+                    ],
+                    6: [
+                        { day: 'Segunda (08/09)', morning: 'Português (Linguística, Estilística)', evening: 'Legislação (Lei 11.419/2006)' },
+                        { day: 'Terça (09/09)', morning: 'Português (Redação: Estruturas)', evening: 'Legislação (Lei 14.133/21)' },
+                        { day: 'Quarta (10/09)', morning: 'Ciência de Dados (Visualização, Storytelling)', evening: 'IA e Automação (Modelos IA Gen)' },
+                        { day: 'Quinta (11/09)', morning: 'Ciência de Dados (Governança de Dados)', evening: 'IA e Automação (Ética em IA, RPA)' },
+                        { day: 'Sexta (12/09)', morning: 'REVISÃO GERAL (Gerais)', evening: 'REVISÃO GERAL (Específicos)' },
+                        { day: 'Sábado (13/09)', morning: 'Revisão Pontual / Descanso', evening: 'SIMULADO COMPLETO (Obj. + Disc.)' },
+                        { day: 'Domingo (14/09)', morning: 'Descanso Total', evening: 'Preparação Logística para a Prova' },
+                    ]
+                },
+                syllabus: {
+                    "Conhecimentos Gerais": {
+                        "Língua Portuguesa": ["Modalidade culta", "Ortografia, acentuação, pontuação", "Vocabulário", "Pronomes", "Concordância", "Flexão verbal e nominal", "Regência", "Vozes do verbo", "Tempos e modos verbais", "Coordenação e subordinação", "Morfossintaxe", "Semântica", "Formação de palavras", "Interpretação de textos", "Linguística e estilística", "Reescrita de frases", "Redação oficial"],
+                        "Raciocínio Lógico": ["Lógica proporcional", "Argumentação lógica", "Raciocínio sequencial", "Raciocínio lógico quantitativo", "Raciocínio lógico analítico", "Diagramas lógicos", "Análise combinatória", "Probabilidade"]
+                    },
+                    "Conhecimentos Específicos": {
+                        "Desenvolvimento de Software": ["Metodologias Ágeis (Scrum, Kanban)", "POO (Java)", "Computação em Nuvem", "Arquitetura de Microsserviços", "DevOps e CI/CD (Git, GitLab, Jenkins)", "API RESTful, JSON, Spring (Boot, Cloud, Eureka)", "Persistência (JPA, Hibernate, Envers, Flyway)", "Mensageria (RabbitMQ, Kafka)", "Containers (Docker, Kubernetes, Rancher)", "Autenticação (SSO, Keycloak, OAuth2)", "Webhook e APIs reversas"],
+                        "Banco de Dados": ["Modelagem de Dados", "Normalização e Integridade", "Linguagens DDL/DML", "SGBDs (PostgreSQL, Oracle, MySQL, H2, MongoDB)", "Integração (JDBC, ORM)"],
+                        "Ciências de Dados, BI e Analytics": ["Fundamentos de Ciência de Dados", "Ética e Privacidade", "Estatística Aplicada", "Ferramentas de BI (Power BI, Metabase)", "Dashboards e Storytelling", "Análise de Dados (Python, SQL)", "Engenharia de Dados (ETL, Big Data)", "Governança e Qualidade de Dados"],
+                        "Inteligência Artificial e Automação": ["Fundamentos de IA e IA Generativa", "Machine Learning (Supervisionado, Não Sup., Reforço)", "Algoritmos (Regressão, Redes Neurais, SVM, k-NN, Clustering)", "Avaliação de Modelos (Acurácia, Precisão, Recall, F1)", "NLP (Tokenização, Stemming, Word2Vec, Transformers)", "Engenharia de Prompt e RAG", "Ferramentas (scikit-learn, TensorFlow, PyTorch, Hugging Face)", "Modelos (ChatGPT, Claude, Gemini, Llama)", "Ética e Responsabilidade em IA", "RPA (Robotic Process Automation)"],
+                        "Segurança da Informação": ["Fundamentos e Normas (CIA, ISO 27001/27002)", "Criptografia (Simétrica, Assimétrica, AES, RSA, SHA-2)", "Segurança de Redes (Firewall, IDS/IPS, VPN, TLS)", "Segurança em Aplicações (OWASP Top 10)", "Segurança em Nuvem (Responsabilidade Compartilhada, IAM)"],
+                        "Legislação": ["Governo Digital (Lei 14.129/21)", "LAI (Lei 12.527/11)", "LGPD (Lei 13.709/18)", "Resoluções CNJ (185/13, 335/20, 370/21, 396/21, 455/22, 468/22, 615/22)", "Resolução TJPE 395/17 (Regimento Interno)", "Código de Organização Judiciária PE (LC 100/07)", "Regime Jurídico Servidores PE (Lei 6.123/68)", "Informatização do Processo Judicial (Lei 11.419/06)", "Nova Lei de Licitações (Lei 14.133/21)"]
+                    }
+                },
+                 strategies: [
+                    { title: "Gestão Inteligente do Tempo", content: "Com 3 horas diárias, o micro-planejamento é crucial. Manhã (1h) para revisão ativa e questões rápidas. Noite (2h) para conteúdo novo e prática aprofundada. Mantenha a flexibilidade com um 'tempo coringa' no fim de semana." },
+                    { title: "Técnicas de Estudo Ativo", content: "Abandone a leitura passiva. Pratique Recuperação Ativa (tente lembrar sem olhar), Elaboração (conecte novos e velhos conhecimentos) e crie Mapas Mentais para visualizar as conexões entre os tópicos." },
+                    { title: "Revisão Sistemática", content: "Use a Repetição Espaçada para combater a curva do esquecimento. Revise o conteúdo em 24h, 3 dias, 7 dias, etc. Use seus resumos e mapas mentais para tornar as revisões rápidas e eficazes." },
+                    { title: "Resolução de Questões e Simulados", content: "Resolver questões da banca IBFC é vital para entender seu estilo. A prática identifica seus pontos fracos e treina a gestão do tempo. Faça simulados completos para simular o dia da prova, incluindo a redação discursiva." },
+                    { title: "Preparação para a Prova Discursiva", content: "A discursiva vale 10 pontos e exige domínio técnico e clareza. Pratique a estrutura (introdução, desenvolvimento, conclusão em 20-30 linhas), o conteúdo (aprofundamento nos temas específicos) e a expressão (português correto e conciso)." },
+                    { title: "Reta Final e Dia da Prova", content: "Na última semana, não aprenda nada novo. Foque em revisão leve, descanso e preparação mental. No dia da prova, chegue cedo, leve os materiais necessários, mantenha a calma e confie na sua preparação." }
+                ],
+                materials: {
+                    'Português (Ortografia, Acentuação, Pontuação)': [{text: 'Vídeo: Acentuação para Concurso', url: '#'}],
+                    'Dev. Software (Metodologias Ágeis: Scrum, Kanban)': [{text: 'Vídeo: Metodologias Ágeis - Scrum, Kanban e mais!', url: 'https://www.youtube.com/watch?v=h_nSQLtI4-A'}, {text: 'Artigo: Kanban vs. Scrum', url: 'https://www.atlassian.com/br/agile/kanban/kanban-vs-scrum'}],
+                    'Dev. Software (POO Java)': [{text: 'Vídeo: POO JAVA para INICIANTES', url: 'https://www.youtube.com/watch?v=d_24y6M8_yA'}],
+                    'Banco de Dados (Modelagem: Conceitual, Lógica, Física)': [{text: 'Artigo: Os três níveis da modelagem de dados', url: 'https://www.alura.com.br/artigos/modelagem-de-dados-o-que-e-e-como-fazer'}],
+                    'Segurança da Info (Fundamentos: CIA, ISO 27001)': [{text: 'Vídeo: Confidencialidade, Integridade, Disponibilidade', url: 'https://www.youtube.com/watch?v=aGqwB5a3H-8'}, {text: 'Artigo: Resumo da ISO 27001', url: 'https://blog.convisoapp.com/resumo-da-iso-27001/'}],
+                    'IA e Automação (Fundamentos IA, IA Generativa)': [{text: 'Artigo: O que é IA Generativa?', url: 'https://www.databricks.com/br/glossary/generative-ai'}],
+                    'Legislação (Governo Digital, LAI)': [{text: 'Lei 14.129/2021 (Governo Digital)', url: 'https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2021/lei/l14129.htm'}, {text: 'Lei 12.527/2011 (LAI)', url: 'https://www.planalto.gov.br/ccivil_03/_ato2011-2014/2011/lei/l12527.htm'}],
+                }
+            };
+
+            const navButtons = document.querySelectorAll('.nav-button');
+            const contentSections = document.querySelectorAll('.content-section');
+            const weekSelector = document.getElementById('week-selector');
+            const scheduleGrid = document.getElementById('schedule-grid');
+            const syllabusContainer = document.getElementById('syllabus-container');
+            const strategiesContainer = document.getElementById('strategies-container');
+            const modal = document.getElementById('materials-modal');
+            const modalTitle = document.getElementById('modal-title');
+            const modalContent = document.getElementById('modal-content');
+            const modalClose = document.getElementById('modal-close');
+
+            function switchTab(targetId) {
+                navButtons.forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.target === targetId);
+                });
+                contentSections.forEach(section => {
+                    section.classList.toggle('active', section.id === targetId);
+                });
+            }
+
+            navButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    switchTab(button.dataset.target);
+                });
+            });
+
+            function renderProvaChart() {
+                const ctx = document.getElementById('provaChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Conhecimentos Específicos', 'Conhecimentos Gerais'],
+                        datasets: [{
+                            data: [45, 7.5],
+                            backgroundColor: ['#3b82f6', '#93c5fd'],
+                            borderColor: ['#ffffff', '#ffffff'],
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        if (context.parsed !== null) {
+                                            label += context.parsed.toFixed(2) + ' pontos';
+                                        }
+                                        return label;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            function renderSchedule(weekNumber) {
+                scheduleGrid.innerHTML = '';
+                const weekData = appData.schedule[weekNumber];
+                weekData.forEach(day => {
+                    const dayCard = `
+                        <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                            <h4 class="font-bold text-gray-800">${day.day}</h4>
+                            <div class="mt-2 space-y-2 text-sm">
+                                <div class="schedule-topic bg-blue-100 text-blue-800 p-2 rounded-md" data-topic="${day.morning}">
+                                    <span class="font-semibold">Manhã:</span> ${day.morning}
+                                </div>
+                                <div class="schedule-topic bg-indigo-100 text-indigo-800 p-2 rounded-md" data-topic="${day.evening}">
+                                    <span class="font-semibold">Noite:</span> ${day.evening}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    scheduleGrid.insertAdjacentHTML('beforeend', dayCard);
+                });
+
+                document.querySelectorAll('#week-selector button').forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.week == weekNumber);
+                });
+            }
+            
+            function setupWeekSelector() {
+                for (let i = 1; i <= 6; i++) {
+                    const weekButton = document.createElement('button');
+                    weekButton.textContent = `Semana ${i}`;
+                    weekButton.dataset.week = i;
+                    weekButton.className = 'nav-button text-sm sm:text-base font-medium py-2 px-4 rounded-lg shadow-sm bg-white hover:bg-blue-100 transition-colors';
+                    weekButton.addEventListener('click', () => renderSchedule(i));
+                    weekSelector.appendChild(weekButton);
+                }
+            }
+
+            function renderSyllabus() {
+                let html = '<div class="space-y-4">';
+                for (const area in appData.syllabus) {
+                    html += `<div class="bg-gray-100 rounded-lg p-4">`;
+                    html += `<h3 class="text-xl font-bold text-gray-700 mb-3">${area}</h3><div class="space-y-2">`;
+                    for (const subject in appData.syllabus[area]) {
+                        html += `
+                            <div class="border border-gray-200 rounded-md bg-white">
+                                <button class="accordion-toggle w-full flex justify-between items-center p-3 text-left font-semibold">
+                                    <span>${subject}</span>
+                                    <span class="transform transition-transform duration-300">&#9662;</span>
+                                </button>
+                                <div class="accordion-content px-3 pb-3">
+                                    <ul class="list-disc list-inside text-gray-600 space-y-1">
+                                        ${appData.syllabus[area][subject].map(topic => `<li>${topic}</li>`).join('')}
+                                    </ul>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    html += `</div></div>`;
+                }
+                html += '</div>';
+                syllabusContainer.innerHTML = html;
+            }
+            
+            function renderStrategies() {
+                let html = '';
+                appData.strategies.forEach(strategy => {
+                    html += `
+                        <div class="border border-gray-200 rounded-md bg-white">
+                            <button class="accordion-toggle w-full flex justify-between items-center p-3 text-left font-semibold">
+                                <span>${strategy.title}</span>
+                                <span class="transform transition-transform duration-300">&#9662;</span>
+                            </button>
+                            <div class="accordion-content px-3 pb-3">
+                                <p class="text-gray-600">${strategy.content}</p>
+                            </div>
+                        </div>
+                    `;
+                });
+                strategiesContainer.innerHTML = html;
+            }
+
+            function setupAccordions() {
+                document.body.addEventListener('click', function(e) {
+                    if (e.target.closest('.accordion-toggle')) {
+                        const button = e.target.closest('.accordion-toggle');
+                        const content = button.nextElementSibling;
+                        const icon = button.querySelector('span:last-child');
+                        
+                        if (content.style.maxHeight) {
+                            content.style.maxHeight = null;
+                            icon.style.transform = 'rotate(0deg)';
+                        } else {
+                            content.style.maxHeight = content.scrollHeight + "px";
+                            icon.style.transform = 'rotate(180deg)';
+                        }
+                    }
+                });
+            }
+
+            function showMaterialsModal(topicKey) {
+                const materials = appData.materials[topicKey];
+                modalTitle.textContent = `Materiais para: ${topicKey}`;
+                let contentHtml = '<p class="text-gray-600">Nenhum material específico cadastrado para este tópico. Consulte os materiais gerais da disciplina.</p>';
+                if(materials && materials.length > 0) {
+                    contentHtml = '<ul class="space-y-3">';
+                    materials.forEach(mat => {
+                        contentHtml += `
+                            <li class="flex items-start">
+                                <span class="text-blue-500 mr-2 mt-1">&#10148;</span>
+                                <a href="${mat.url}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">${mat.text}</a>
+                            </li>
+                        `;
+                    });
+                    contentHtml += '</ul>';
+                }
+                modalContent.innerHTML = contentHtml;
+                modal.classList.remove('hidden');
+            }
+
+            scheduleGrid.addEventListener('click', function(e) {
+                const topicElement = e.target.closest('.schedule-topic');
+                if (topicElement) {
+                    const topicKey = topicElement.dataset.topic;
+                    showMaterialsModal(topicKey);
+                }
+            });
+
+            modalClose.addEventListener('click', () => modal.classList.add('hidden'));
+            modal.addEventListener('click', (e) => {
+                if(e.target === modal) {
+                    modal.classList.add('hidden');
+                }
+            });
+            
+            renderProvaChart();
+            setupWeekSelector();
+            renderSchedule(1);
+            renderSyllabus();
+            renderStrategies();
+            setupAccordions();
+        });
+    </script>
+</body>
+</html>
